@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "ADFdemoramm"
+		},
+		"LinkedService_Sql_password": {
+			"value": ""
+		},
+		"Linkedservice_storagedemoramm_connectionString": {
+			"value": ""
+		},
+		"LinkedService_Sql_properties_typeProperties_server": {
+			"value": "mydbserver.windowa.ds.net"
+		},
+		"LinkedService_Sql_properties_typeProperties_database": {
+			"value": "@{linkedService().DbName}"
+		},
+		"LinkedService_Sql_properties_typeProperties_userName": {
+			"value": "ramm"
+		},
+		"trigger1_properties_pipeline2 - SQL Database_parameters_SourceTable": {
+			"value": "Table1"
+		},
+		"trigger1_properties_pipeline2 - SQL Database_parameters_DbNamefromPipeline": {
+			"value": "TestDB"
+		},
+		"trigger1_properties_pipeline2 - SQL Database_parameters_DestinationTable": {
+			"value": "Table2"
+		}
+	}
+}

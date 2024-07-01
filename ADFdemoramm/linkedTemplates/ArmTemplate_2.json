@@ -1,0 +1,1148 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADFdemoramm"
+		},
+		"trigger1_properties_pipeline2 - SQL Database_parameters_SourceTable": {
+			"type": "string",
+			"defaultValue": "Table1"
+		},
+		"trigger1_properties_pipeline2 - SQL Database_parameters_DbNamefromPipeline": {
+			"type": "string",
+			"defaultValue": "TestDB"
+		},
+		"trigger1_properties_pipeline2 - SQL Database_parameters_DestinationTable": {
+			"type": "string",
+			"defaultValue": "Table2"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/JoinOrdersCustData')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CustomersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "CustomersData"
+						},
+						{
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "OrdersData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "OutputData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "joinOrdersDataCustData"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as string,",
+						"          CustomerName as string,",
+						"          ContactName as string,",
+						"          Address as string,",
+						"          City as string,",
+						"          PostalCode as string,",
+						"          Country as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> CustomersData",
+						"source(output(",
+						"          OrderID as string,",
+						"          CustomerID as string,",
+						"          EmployeeID as string,",
+						"          OrderDate as string,",
+						"          ShipperID as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> OrdersData",
+						"CustomersData, OrdersData join(CustomersData@CustomerID == OrdersData@CustomerID,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinOrdersDataCustData",
+						"joinOrdersDataCustData sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['OrdersCustData'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          CustomerID = CustomersData@CustomerID,",
+						"          CustomerName,",
+						"          ContactName,",
+						"          Address,",
+						"          City,",
+						"          PostalCode,",
+						"          Country,",
+						"          OrderID,",
+						"          EmployeeID,",
+						"          OrderDate,",
+						"          ShipperID",
+						"     ),",
+						"     partitionBy('hash', 1)) ~> OutputData"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Lookupdataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "look up transformation preforming activity to join the customer and the orders table (look up activity is same as the left outer join)",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CustomersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "CustomersTable"
+						},
+						{
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "OrdersTable"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "lookup1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as string,",
+						"          CustomerName as string,",
+						"          ContactName as string,",
+						"          Address as string,",
+						"          City as string,",
+						"          PostalCode as string,",
+						"          Country as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> CustomersTable",
+						"source(output(",
+						"          OrderID as string,",
+						"          CustomerID as string,",
+						"          EmployeeID as string,",
+						"          OrderDate as string,",
+						"          ShipperID as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> OrdersTable",
+						"CustomersTable, OrdersTable lookup(CustomersTable@CustomerID == OrdersTable@CustomerID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup1",
+						"lookup1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Lookup cust order  (left join).csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PerrametaringDataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EmpMaheerDataDataset",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "filter1"
+						}
+					],
+					"scriptLines": [
+						"parameters{",
+						"     DEPName as string",
+						"}",
+						"source(output(",
+						"          id as string,",
+						"          name as string,",
+						"          gender as string,",
+						"          country as string,",
+						"          salary as string,",
+						"          department as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 filter(equals(department, $DEPName)) ~> filter1",
+						"filter1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Perrametaring the dataflow.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Pivort different from aggregate dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "refer to pivot ",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "sort1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          OrderID as string,",
+						"          CustomerID as string,",
+						"          EmployeeID as string,",
+						"          OrderDate as string,",
+						"          ShipperID as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 aggregate(groupBy(EmployeeID,",
+						"          ShipperID),",
+						"     OrderID = count(OrderID)) ~> aggregate1",
+						"aggregate1 sort(asc(ShipperID, true),",
+						"     asc(EmployeeID, true)) ~> sort1",
+						"sort1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Pivort ship and emp count aggregate .csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          ShipperID,",
+						"          EmployeeID,",
+						"          OrderID",
+						"     ),",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Pivot dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Transforming the values in rows into new columns is pivot\nPivot is same as aggregate function, but it creates the new column instead for row. \nex: hear we grouped the shipperid and we pivot the emp id (as second group ny) so it creates the new column instead of row. ",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "pivot1"
+						},
+						{
+							"name": "sort1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          OrderID as string,",
+						"          CustomerID as string,",
+						"          EmployeeID as string,",
+						"          OrderDate as string,",
+						"          ShipperID as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 pivot(groupBy(ShipperID),",
+						"     pivotBy(EmployeeID),",
+						"     {} = count(OrderID),",
+						"     columnNaming: 'Emp ID:$N$V',",
+						"     lateral: true) ~> pivot1",
+						"pivot1 sort(asc(ShipperID, true)) ~> sort1",
+						"sort1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Pivot shipper and emp id (agrate).csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Power query 1 - Emp')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This Power Query in ADF performs data cleaning on the \"EmployeeDataset.\" It starts by removing the \"Photo\" and \"BirthDate\" columns, which are deemed unnecessary for the current analysis. Then, it standardizes the values in the \"Notes\" column by correcting the misspelled \"PHDD\" to \"PHD.\" This transformation ensures the dataset is clean and consistent for further data processing or analysis.",
+				"type": "WranglingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"name": "EmployeeDataset",
+							"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> EmployeeDataset",
+							"dataset": {
+								"referenceName": "EmployeeDataset",
+								"type": "DatasetReference"
+							}
+						}
+					],
+					"script": "section Section1;\r\nshared EmployeeDataset = let AdfDoc = AzureStorage.BlobContents(\"https://storagedemoram.blob.core.windows.net/adfdemo/input/Employee.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared UserQuery = let Source = #\"EmployeeDataset\",\r\n  #\"Removed columns\" = Table.RemoveColumns(Source, {\"Photo\", \"BirthDate\"}),\r\n  #\"Replaced value\" = Table.ReplaceValue(#\"Removed columns\", \"PHD\", \"PHDD\", Replacer.ReplaceText, {\"Notes\"}) in #\"Replaced value\";\r\n",
+					"documentLocale": "en-us"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Powerquery 2  - Merge Queries')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Merge Queries in Wrangling Data Flow is same as joins in SQL or joins in the dataflow ",
+				"type": "WranglingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"name": "CustomersDataset",
+							"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> CustomersDataset",
+							"dataset": {
+								"referenceName": "CustomersDataset",
+								"type": "DatasetReference"
+							}
+						},
+						{
+							"name": "OrdersDataset",
+							"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> OrdersDataset",
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							}
+						}
+					],
+					"script": "section Section1;\r\nshared CustomersDataset = let AdfDoc = AzureStorage.BlobContents(\"https://storagedemoram.blob.core.windows.net/adfdemo/input/Customers.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared OrdersDataset = let AdfDoc = AzureStorage.BlobContents(\"https://storagedemoram.blob.core.windows.net/adfdemo/input/Orders.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared UserQuery = let Source = #\"CustomersDataset\",\r\n  #\"Merged queries\" = Table.NestedJoin(Source, {\"CustomerID\"}, OrdersDataset, {\"CustomerID\"}, \"OrdersDataset\", JoinKind.Inner),\r\n  #\"Expanded OrdersDataset\" = Table.ExpandTableColumn(#\"Merged queries\", \"OrdersDataset\", {\"OrderID\", \"EmployeeID\", \"OrderDate\", \"ShipperID\"}, {\"OrderID\", \"EmployeeID\", \"OrderDate\", \"ShipperID\"}),\r\n  #\"Removed columns\" = Table.RemoveColumns(#\"Expanded OrdersDataset\", {\"ContactName\", \"Address\", \"PostalCode\"}) in #\"Removed columns\";\r\n",
+					"documentLocale": "en-us"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SelectDataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1",
+							"rejectedDataLinkedService": {
+								"referenceName": "Linkedservice_storagedemoramm",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"transformations": [
+						{
+							"name": "select1"
+						},
+						{
+							"name": "sort1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          OrderID as string,",
+						"          CustomerID as string,",
+						"          EmployeeID as string,",
+						"          OrderDate as string,",
+						"          ShipperID as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 select(mapColumn(",
+						"          OrderDate,",
+						"          OrderID",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 sort(asc(OrderDate, true)) ~> sort1",
+						"sort1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Select order ID & Date.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SortDataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "sort transformation is like order by in SQL \nSort Transformation is performed to sort the table according to postal code ascending order. it displays the null values in the selected column and follows the rest \n",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CustomersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "customers"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1",
+							"rejectedDataLinkedService": {
+								"referenceName": "Linkedservice_storagedemoramm",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"transformations": [
+						{
+							"name": "sortName"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerID as string,",
+						"          CustomerName as string,",
+						"          ContactName as string,",
+						"          Address as string,",
+						"          City as string,",
+						"          PostalCode as string,",
+						"          Country as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> customers",
+						"customers sort(asc(PostalCode, true)) ~> sortName",
+						"sortName sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Sort postal code accending order (Order by)'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SurrogateKeyDataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Surrogate key to add an increment key value to each row as a new column\nit is for adding something like serial number \nwe added the serial num to orders table",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "surrogateKey1"
+						},
+						{
+							"name": "sort1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          OrderID as string,",
+						"          CustomerID as string,",
+						"          EmployeeID as string,",
+						"          OrderDate as string,",
+						"          ShipperID as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 keyGenerate(output({serial num} as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> surrogateKey1",
+						"surrogateKey1 sort(asc({serial num}, true)) ~> sort1",
+						"sort1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Surrogate key added Serial num to orders.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          {serial num},",
+						"          OrderID,",
+						"          CustomerID,",
+						"          EmployeeID,",
+						"          OrderDate,",
+						"          ShipperID",
+						"     ),",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Union shipperdataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "Shiper1Dataset",
+								"type": "DatasetReference"
+							},
+							"name": "shipper1"
+						},
+						{
+							"dataset": {
+								"referenceName": "Shipper2Dataset",
+								"type": "DatasetReference"
+							},
+							"name": "shipper2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "unionshipper1and2"
+						}
+					],
+					"scriptLines": [
+						"source(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> shipper1",
+						"source(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> shipper2",
+						"shipper1, shipper2 union(byName: true)~> unionshipper1and2",
+						"unionshipper1and2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Union of shipper 1 and 2.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/UnpivotDataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "its ungrouping the columns\nTransforming the values in columns into new rows is unpivot. unpivot is opposite to pivot",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "PivortedShipperAndEmpfile",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "unpivot1"
+						},
+						{
+							"name": "sort1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          ShipperID as string,",
+						"          {Emp ID:1} as string,",
+						"          {Emp ID:2} as string,",
+						"          {Emp ID:3} as string,",
+						"          {Emp ID:4} as string,",
+						"          {Emp ID:5} as string,",
+						"          {Emp ID:6} as string,",
+						"          {Emp ID:7} as string,",
+						"          {Emp ID:8} as string,",
+						"          {Emp ID:9} as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     inferDriftedColumnTypes: true,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 unpivot(output(",
+						"          {EMP ID} as integer,",
+						"          {order count} as string",
+						"     ),",
+						"     ungroupBy(ShipperID),",
+						"     lateral: true,",
+						"     ignoreNullPivots: true) ~> unpivot1",
+						"unpivot1 sort(asc(ShipperID, true),",
+						"     asc({EMP ID}, true)) ~> sort1",
+						"sort1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['UN Pivot shipper and emp id (agrate).csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Window and densrank Dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "windows transformation in dataflow is like partition/over clause in SQL which divides the parts depends on our selection.\n\nhere we have separated the partition based on the department and added avg salary and Dens rank function to rank each row  ",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EmpMaheerDataDataset",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OutputDatasetCSVfiles",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "window1"
+						},
+						{
+							"name": "surrogateKey1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as integer,",
+						"          name as string,",
+						"          gender as string,",
+						"          country as string,",
+						"          salary as integer,",
+						"          department as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> source1",
+						"source1 window(over(department),",
+						"     desc(salary, true),",
+						"     AvgSalary = avg(salary),",
+						"          DensRank = denseRank()) ~> window1",
+						"window1 keyGenerate(output({Sl Number} as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> surrogateKey1",
+						"surrogateKey1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Window Emp and Densrank.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          {Sl Number},",
+						"          id,",
+						"          name,",
+						"          gender,",
+						"          country,",
+						"          salary,",
+						"          department,",
+						"          AvgSalary,",
+						"          DensRank",
+						"     ),",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/powerquery 3 - Groupby')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "WranglingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"name": "OrdersDataset",
+							"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> OrdersDataset",
+							"dataset": {
+								"referenceName": "OrdersDataset",
+								"type": "DatasetReference"
+							}
+						}
+					],
+					"script": "section Section1;\r\nshared OrdersDataset = let AdfDoc = AzureStorage.BlobContents(\"https://storagedemoram.blob.core.windows.net/adfdemo/input/Orders.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared UserQuery = let Source = #\"OrdersDataset\",\r\n  #\"Grouped rows\" = Table.Group(Source, {\"ShipperID\"}, {{\"Count of shippers\", each Table.RowCount(_), Int64.Type}}) in #\"Grouped rows\";\r\n",
+					"documentLocale": "en-us"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Pipeline 5 - Master Execute Pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Pipeline 5 - Master Execute Pipeline",
+						"description": "Executing the pipeline using execute pipeline activity",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pipeline1 - copying TXT File",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-06-16T05:43:15Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline 13 - Executing Data Flow')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "AlterRowDataflow",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-06-27T22:52:56Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Refer to the data flow PerrameterDataFlow \nParametrizing the dataflow and running the dataflow thought pipeline parameter.\nin the pipeline we have created the new parameter named DEP and given this as the default value for the Data Flow parameter named DEPName. so, it will more user friendly to enter the parameter value for output ",
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "PerrametaringDataflow",
+								"type": "DataFlowReference",
+								"parameters": {
+									"DEPName": {
+										"value": "'@{pipeline().parameters.DEP}'",
+										"type": "Expression"
+									}
+								},
+								"datasetParameters": {
+									"source1": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"DEP": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-06-28T04:36:11Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/PerrametaringDataflow')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline14 -  Executing Power Query')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Power Query1",
+						"type": "ExecuteWranglingDataflow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Powerquery 2  - Merge Queries",
+								"type": "DataFlowReference",
+								"datasetParameters": {
+									"CustomersDataset": {},
+									"OrdersDataset": {},
+									"UserQueryOutputDatasetCSVfiles": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"queries": [
+								{
+									"queryName": "UserQuery",
+									"dataflowSinks": [
+										{
+											"name": "UserQueryOutputDatasetCSVfiles",
+											"dataset": {
+												"referenceName": "OutputDatasetCSVfiles",
+												"type": "DatasetReference",
+												"parameters": {}
+											},
+											"script": "sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['Power Query - Merging Quires - Cust orders .csv'],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> UserQueryOutputDatasetCSVfiles"
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-06-29T02:56:33Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Powerquery 2  - Merge Queries')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline9 - Wait Activity')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Wait Activity to exquisite the pipeline after the time mentioned directly or through the parameter dynamic Content ",
+				"activities": [
+					{
+						"name": "Wait1",
+						"description": "This activity introduces a delay in the pipeline execution for a specified duration. It is used to ensure that subsequent activities, such as the 'Execute Pipeline' activity, do not start immediately. This can be useful in scenarios where there is a need to wait for external processes to complete or to stagger the execution of dependent pipelines.",
+						"type": "Wait",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": {
+								"value": "@pipeline().parameters.waitfors10ecs",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Execute Pipeline 1 using wait activity",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Wait1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pipeline1 - copying TXT File",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"waitfors10ecs": {
+						"type": "int",
+						"defaultValue": 10
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-06-16T05:43:15Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/trigger1')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pipeline2 - SQL Database",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"SourceTable": "[parameters('trigger1_properties_pipeline2 - SQL Database_parameters_SourceTable')]",
+							"DbNamefromPipeline": "[parameters('trigger1_properties_pipeline2 - SQL Database_parameters_DbNamefromPipeline')]",
+							"DestinationTable": "[parameters('trigger1_properties_pipeline2 - SQL Database_parameters_DestinationTable')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Month",
+						"interval": 1,
+						"startTime": "2024-06-14T00:22:00",
+						"endTime": "2024-06-14T21:25:29",
+						"timeZone": "GMT Standard Time",
+						"schedule": {
+							"monthDays": [
+								-1
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

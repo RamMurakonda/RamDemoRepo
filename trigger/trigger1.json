@@ -1,0 +1,35 @@
+{
+	"name": "trigger1",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pipeline2 - SQL Database",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"SourceTable": "Table1",
+					"DbNamefromPipeline": "TestDB",
+					"DestinationTable": "Table2"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Month",
+				"interval": 1,
+				"startTime": "2024-06-14T00:22:00",
+				"endTime": "2024-06-14T21:25:29",
+				"timeZone": "GMT Standard Time",
+				"schedule": {
+					"monthDays": [
+						-1
+					]
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,86 @@
+{
+	"name": "JoinOrdersCustData",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CustomersDataset",
+						"type": "DatasetReference"
+					},
+					"name": "CustomersData"
+				},
+				{
+					"dataset": {
+						"referenceName": "OrdersDataset",
+						"type": "DatasetReference"
+					},
+					"name": "OrdersData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "OutputData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "joinOrdersDataCustData"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as string,",
+				"          CustomerName as string,",
+				"          ContactName as string,",
+				"          Address as string,",
+				"          City as string,",
+				"          PostalCode as string,",
+				"          Country as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> CustomersData",
+				"source(output(",
+				"          OrderID as string,",
+				"          CustomerID as string,",
+				"          EmployeeID as string,",
+				"          OrderDate as string,",
+				"          ShipperID as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> OrdersData",
+				"CustomersData, OrdersData join(CustomersData@CustomerID == OrdersData@CustomerID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinOrdersDataCustData",
+				"joinOrdersDataCustData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['OrdersCustData'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          CustomerID = CustomersData@CustomerID,",
+				"          CustomerName,",
+				"          ContactName,",
+				"          Address,",
+				"          City,",
+				"          PostalCode,",
+				"          Country,",
+				"          OrderID,",
+				"          EmployeeID,",
+				"          OrderDate,",
+				"          ShipperID",
+				"     ),",
+				"     partitionBy('hash', 1)) ~> OutputData"
+			]
+		}
+	}
+}

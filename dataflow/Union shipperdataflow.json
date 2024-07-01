@@ -1,0 +1,53 @@
+{
+	"name": "Union shipperdataflow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Shiper1Dataset",
+						"type": "DatasetReference"
+					},
+					"name": "shipper1"
+				},
+				{
+					"dataset": {
+						"referenceName": "Shipper2Dataset",
+						"type": "DatasetReference"
+					},
+					"name": "shipper2"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "unionshipper1and2"
+				}
+			],
+			"scriptLines": [
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> shipper1",
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> shipper2",
+				"shipper1, shipper2 union(byName: true)~> unionshipper1and2",
+				"unionshipper1and2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Union of shipper 1 and 2.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

@@ -1,0 +1,48 @@
+{
+	"name": "pipeline4 - Delecting File",
+	"properties": {
+		"activities": [
+			{
+				"name": "Delete1",
+				"description": "Delecting all the txt files in the output folder in the adfdemo container using delete activity ",
+				"type": "Delete",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [
+					{
+						"name": "FilesDaleted",
+						"value": "All TXT Files In Output folder of Adefdemo container"
+					}
+				],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "OutputFolderDataset",
+						"type": "DatasetReference"
+					},
+					"logStorageSettings": {
+						"linkedServiceName": {
+							"referenceName": "Linkedservice_storagedemoramm",
+							"type": "LinkedServiceReference"
+						},
+						"path": "adfdemo/output"
+					},
+					"enableLogging": true,
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					}
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-06-16T05:43:15Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

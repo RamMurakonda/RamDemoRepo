@@ -1,0 +1,73 @@
+{
+	"name": "Lookupdataflow",
+	"properties": {
+		"description": "look up transformation preforming activity to join the customer and the orders table (look up activity is same as the left outer join)",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CustomersDataset",
+						"type": "DatasetReference"
+					},
+					"name": "CustomersTable"
+				},
+				{
+					"dataset": {
+						"referenceName": "OrdersDataset",
+						"type": "DatasetReference"
+					},
+					"name": "OrdersTable"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "lookup1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as string,",
+				"          CustomerName as string,",
+				"          ContactName as string,",
+				"          Address as string,",
+				"          City as string,",
+				"          PostalCode as string,",
+				"          Country as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> CustomersTable",
+				"source(output(",
+				"          OrderID as string,",
+				"          CustomerID as string,",
+				"          EmployeeID as string,",
+				"          OrderDate as string,",
+				"          ShipperID as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> OrdersTable",
+				"CustomersTable, OrdersTable lookup(CustomersTable@CustomerID == OrdersTable@CustomerID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup1",
+				"lookup1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Lookup cust order  (left join).csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

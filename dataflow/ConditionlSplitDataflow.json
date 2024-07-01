@@ -1,0 +1,79 @@
+{
+	"name": "ConditionlSplitDataflow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "OrdersDataset",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "Ship1Sink"
+				},
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "Ship2Sink"
+				},
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "Ship3Sink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "splitbasedoncondition"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          OrderID as string,",
+				"          CustomerID as string,",
+				"          EmployeeID as string,",
+				"          OrderDate as string,",
+				"          ShipperID as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 split(equals(ShipperID, '1'),",
+				"     equals(ShipperID, '2'),",
+				"     equals(ShipperID, '3'),",
+				"     disjoint: false) ~> splitbasedoncondition@(Ship1SpeedyExpress, Ship2UnitedPackage, Ship3FederalShipping)",
+				"splitbasedoncondition@Ship1SpeedyExpress sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Shipper1.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> Ship1Sink",
+				"splitbasedoncondition@Ship2UnitedPackage sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Shipper2.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> Ship2Sink",
+				"splitbasedoncondition@Ship3FederalShipping sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Shipper3.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> Ship3Sink"
+			]
+		}
+	}
+}

@@ -1,0 +1,66 @@
+{
+	"name": "PivortedShipperAndEmpfile",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Linkedservice_storagedemoramm",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "Pivot shipper and emp id (agrate).csv",
+				"folderPath": "output",
+				"container": "adfdemo"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "ShipperID",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:1",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:2",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:3",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:4",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:5",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:6",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:7",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:8",
+				"type": "String"
+			},
+			{
+				"name": "Emp ID:9",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

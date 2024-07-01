@@ -1,0 +1,27 @@
+{
+	"name": "Pipeline 5 - Master Execute Pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Pipeline 5 - Master Execute Pipeline",
+				"description": "Executing the pipeline using execute pipeline activity",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pipeline1 - copying TXT File",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-06-16T05:43:15Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

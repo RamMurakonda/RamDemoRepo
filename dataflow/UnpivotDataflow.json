@@ -1,0 +1,68 @@
+{
+	"name": "UnpivotDataflow",
+	"properties": {
+		"description": "its ungrouping the columns\nTransforming the values in columns into new rows is unpivot. unpivot is opposite to pivot",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "PivortedShipperAndEmpfile",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "unpivot1"
+				},
+				{
+					"name": "sort1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          ShipperID as string,",
+				"          {Emp ID:1} as string,",
+				"          {Emp ID:2} as string,",
+				"          {Emp ID:3} as string,",
+				"          {Emp ID:4} as string,",
+				"          {Emp ID:5} as string,",
+				"          {Emp ID:6} as string,",
+				"          {Emp ID:7} as string,",
+				"          {Emp ID:8} as string,",
+				"          {Emp ID:9} as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     inferDriftedColumnTypes: true,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 unpivot(output(",
+				"          {EMP ID} as integer,",
+				"          {order count} as string",
+				"     ),",
+				"     ungroupBy(ShipperID),",
+				"     lateral: true,",
+				"     ignoreNullPivots: true) ~> unpivot1",
+				"unpivot1 sort(asc(ShipperID, true),",
+				"     asc({EMP ID}, true)) ~> sort1",
+				"sort1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['UN Pivot shipper and emp id (agrate).csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

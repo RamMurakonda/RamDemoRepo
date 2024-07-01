@@ -1,0 +1,72 @@
+{
+	"name": "Window and densrank Dataflow",
+	"properties": {
+		"description": "windows transformation in dataflow is like partition/over clause in SQL which divides the parts depends on our selection.\n\nhere we have separated the partition based on the department and added avg salary and Dens rank function to rank each row  ",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "EmpMaheerDataDataset",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "window1"
+				},
+				{
+					"name": "surrogateKey1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as integer,",
+				"          name as string,",
+				"          gender as string,",
+				"          country as string,",
+				"          salary as integer,",
+				"          department as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 window(over(department),",
+				"     desc(salary, true),",
+				"     AvgSalary = avg(salary),",
+				"          DensRank = denseRank()) ~> window1",
+				"window1 keyGenerate(output({Sl Number} as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"surrogateKey1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Window Emp and Densrank.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          {Sl Number},",
+				"          id,",
+				"          name,",
+				"          gender,",
+				"          country,",
+				"          salary,",
+				"          department,",
+				"          AvgSalary,",
+				"          DensRank",
+				"     ),",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

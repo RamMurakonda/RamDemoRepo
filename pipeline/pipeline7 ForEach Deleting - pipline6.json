@@ -1,0 +1,77 @@
+{
+	"name": "pipeline7 ForEach Deleting - pipline6",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEachDeleting",
+				"description": "Deleting the Folders copied / created in pipeline6 using Foreach",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.OutputFoldernames",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Delete1",
+							"type": "Delete",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "DemoramOutput",
+									"type": "DatasetReference",
+									"parameters": {
+										"FolderName": {
+											"value": "@item()",
+											"type": "Expression"
+										}
+									}
+								},
+								"logStorageSettings": {
+									"linkedServiceName": {
+										"referenceName": "Linkedservice_storagedemoramm",
+										"type": "LinkedServiceReference"
+									},
+									"path": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								},
+								"enableLogging": true,
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"OutputFoldernames": {
+				"type": "array",
+				"defaultValue": [
+					"output1/Data1.txt",
+					"output2/Data2.txt",
+					"output3/data3.txt"
+				]
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-06-16T02:22:29Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

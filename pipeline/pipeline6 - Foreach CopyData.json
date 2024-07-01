@@ -1,0 +1,96 @@
+{
+	"name": "pipeline6 - Foreach CopyData",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach1",
+				"description": "Copying The Data.txt file into 3 different folders with the 3 different file names in the same container ",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.OutputFolders",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Copy data1",
+							"description": "Copying The Data.txt file into 3 different folders with the 3 different file names ",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [
+								{
+									"name": "Source",
+									"value": "adfdemo/input/data.txt"
+								},
+								{
+									"name": "Destination",
+									"value": "adfdemo/@{item()}/"
+								}
+							],
+							"typeProperties": {
+								"source": {
+									"type": "BinarySource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true
+									},
+									"formatSettings": {
+										"type": "BinaryReadSettings"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "InputDataDataSet",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DemoramOutput",
+									"type": "DatasetReference",
+									"parameters": {
+										"FolderName": {
+											"value": "@item()",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"OutputFolders": {
+				"type": "array",
+				"defaultValue": [
+					"output1/Data1.txt",
+					"output2/Data2.txt",
+					"output3/data3.txt"
+				]
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-06-16T02:27:02Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

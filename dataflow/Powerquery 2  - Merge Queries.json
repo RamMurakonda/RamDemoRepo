@@ -1,0 +1,29 @@
+{
+	"name": "Powerquery 2  - Merge Queries",
+	"properties": {
+		"description": "Merge Queries in Wrangling Data Flow is same as joins in SQL or joins in the dataflow ",
+		"type": "WranglingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"name": "CustomersDataset",
+					"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> CustomersDataset",
+					"dataset": {
+						"referenceName": "CustomersDataset",
+						"type": "DatasetReference"
+					}
+				},
+				{
+					"name": "OrdersDataset",
+					"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> OrdersDataset",
+					"dataset": {
+						"referenceName": "OrdersDataset",
+						"type": "DatasetReference"
+					}
+				}
+			],
+			"script": "section Section1;\r\nshared CustomersDataset = let AdfDoc = AzureStorage.BlobContents(\"https://storagedemoram.blob.core.windows.net/adfdemo/input/Customers.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared OrdersDataset = let AdfDoc = AzureStorage.BlobContents(\"https://storagedemoram.blob.core.windows.net/adfdemo/input/Orders.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared UserQuery = let Source = #\"CustomersDataset\",\r\n  #\"Merged queries\" = Table.NestedJoin(Source, {\"CustomerID\"}, OrdersDataset, {\"CustomerID\"}, \"OrdersDataset\", JoinKind.Inner),\r\n  #\"Expanded OrdersDataset\" = Table.ExpandTableColumn(#\"Merged queries\", \"OrdersDataset\", {\"OrderID\", \"EmployeeID\", \"OrderDate\", \"ShipperID\"}, {\"OrderID\", \"EmployeeID\", \"OrderDate\", \"ShipperID\"}),\r\n  #\"Removed columns\" = Table.RemoveColumns(#\"Expanded OrdersDataset\", {\"ContactName\", \"Address\", \"PostalCode\"}) in #\"Removed columns\";\r\n",
+			"documentLocale": "en-us"
+		}
+	}
+}

@@ -1,0 +1,53 @@
+{
+	"name": "pipeline9 - Wait Activity",
+	"properties": {
+		"description": "Wait Activity to exquisite the pipeline after the time mentioned directly or through the parameter dynamic Content ",
+		"activities": [
+			{
+				"name": "Wait1",
+				"description": "This activity introduces a delay in the pipeline execution for a specified duration. It is used to ensure that subsequent activities, such as the 'Execute Pipeline' activity, do not start immediately. This can be useful in scenarios where there is a need to wait for external processes to complete or to stagger the execution of dependent pipelines.",
+				"type": "Wait",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": {
+						"value": "@pipeline().parameters.waitfors10ecs",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Execute Pipeline 1 using wait activity",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Wait1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pipeline1 - copying TXT File",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"parameters": {
+			"waitfors10ecs": {
+				"type": "int",
+				"defaultValue": 10
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-06-16T05:43:15Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

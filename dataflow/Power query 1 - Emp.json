@@ -1,0 +1,21 @@
+{
+	"name": "Power query 1 - Emp",
+	"properties": {
+		"description": "This Power Query in ADF performs data cleaning on the \"EmployeeDataset.\" It starts by removing the \"Photo\" and \"BirthDate\" columns, which are deemed unnecessary for the current analysis. Then, it standardizes the values in the \"Notes\" column by correcting the misspelled \"PHDD\" to \"PHD.\" This transformation ensures the dataset is clean and consistent for further data processing or analysis.",
+		"type": "WranglingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"name": "EmployeeDataset",
+					"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> EmployeeDataset",
+					"dataset": {
+						"referenceName": "EmployeeDataset",
+						"type": "DatasetReference"
+					}
+				}
+			],
+			"script": "section Section1;\r\nshared EmployeeDataset = let AdfDoc = AzureStorage.BlobContents(\"https://storagedemoram.blob.core.windows.net/adfdemo/input/Employee.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared UserQuery = let Source = #\"EmployeeDataset\",\r\n  #\"Removed columns\" = Table.RemoveColumns(Source, {\"Photo\", \"BirthDate\"}),\r\n  #\"Replaced value\" = Table.ReplaceValue(#\"Removed columns\", \"PHD\", \"PHDD\", Replacer.ReplaceText, {\"Notes\"}) in #\"Replaced value\";\r\n",
+			"documentLocale": "en-us"
+		}
+	}
+}

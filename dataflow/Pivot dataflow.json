@@ -1,0 +1,59 @@
+{
+	"name": "Pivot dataflow",
+	"properties": {
+		"description": "Transforming the values in rows into new columns is pivot\nPivot is same as aggregate function, but it creates the new column instead for row. \nex: hear we grouped the shipperid and we pivot the emp id (as second group ny) so it creates the new column instead of row. ",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "OrdersDataset",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "OutputDatasetCSVfiles",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "pivot1"
+				},
+				{
+					"name": "sort1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          OrderID as string,",
+				"          CustomerID as string,",
+				"          EmployeeID as string,",
+				"          OrderDate as string,",
+				"          ShipperID as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 pivot(groupBy(ShipperID),",
+				"     pivotBy(EmployeeID),",
+				"     {} = count(OrderID),",
+				"     columnNaming: 'Emp ID:$N$V',",
+				"     lateral: true) ~> pivot1",
+				"pivot1 sort(asc(ShipperID, true)) ~> sort1",
+				"sort1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Pivot shipper and emp id (agrate).csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}
